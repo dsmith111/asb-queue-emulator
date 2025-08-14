@@ -63,7 +63,6 @@ func AmqpToHttpBatch(amqpMessage *amqp.Message) (*http.Request, error) {
 	propJSON, _ := json.Marshal(amqpMessage.Properties)
 
 	props := map[string]interface{}{}
-	json.Unmarshal(headerJSON, &props)
 	if err := json.Unmarshal(headerJSON, &props); err != nil {
 		return nil, err
 	}
