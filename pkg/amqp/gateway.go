@@ -135,7 +135,7 @@ func HttpToAmqp(httpResponse *http.Response) (*amqp.Message, error) {
 			amqpMessage.Header = header
 
 			properties := &amqp.MessageProperties{}
-			if v, ok := props["MessageID"]; ok {
+			if v, ok := props["MessageId"]; ok {
 				properties.MessageID = v
 			}
 			if v, ok := props["CorrelationID"]; ok {
