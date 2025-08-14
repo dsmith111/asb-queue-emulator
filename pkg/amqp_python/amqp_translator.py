@@ -98,13 +98,39 @@ def AmqpToHttp(path: str, amqpMessage: Message, method: str):
     return httpRequest
 
 def HttpToAmqp(httpResponse: http.client.HTTPResponse) -> Message:
-    # Extract the body from the response
     body = httpResponse.content
-    # Parse body into AMQP message
+    if isinstance(body, bytes):
+        payload = body.decode("utf-8")
+    else:
+        payload = body
+
     response = Message()
-    response.body = body
+    response.body = payload
     response.correlation_id = httpResponse.headers.get("CorrelationId", 0)
-    
+
+    broker_header = httpResponse.headers.get("BrokerProperties")
+    if broker_header:
+        try:
+            props = json.loads(broker_header)
+        except Exception:
+            props = {}
+
+        response.id = props.get("MessageID") or props.get("MessageId")
+        response.reply_to = props.get("ReplyTo")
+        response.ttl = props.get("TTL") or props.get("TimeToLive", 0)
+        response.delivery_count = props.get("DeliveryCount", 0)
+        response.address = props.get("To")
+        response.subject = props.get("Label") or props.get("Subject")
+
+    app_props = {}
+    for k, v in httpResponse.headers.items():
+        if k.lower() in ["brokerproperties", "content-type"]:
+            continue
+        app_props[k] = v
+
+    if app_props:
+        response.properties = app_props
+
     return response
 
 def FormatHTTPOperation(operation_type: str, path: str):

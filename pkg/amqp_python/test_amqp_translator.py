@@ -1,7 +1,9 @@
 import unittest
 from  proton import Message
+import requests
+import json
 
-import amqp_translator
+from . import amqp_translator
 
 class TestAmqpTranslation(unittest.TestCase):
     # Basic test to validate body and headers are set
@@ -64,7 +66,7 @@ class TestAmqpTranslation(unittest.TestCase):
 
         constructedHttpRequest = amqp_translator.AmqpToHttp(path, messageTest, "POST")
  
-        brokerPropJson = constructedHttpRequest.headers["BrokerProperties"]
+        brokerPropJson = json.loads(constructedHttpRequest.headers["BrokerProperties"])
 
         # Validate each of the expected headers is set
         for k,v in expectedBrokerPropJson.items():
@@ -79,6 +81,23 @@ class TestAmqpTranslation(unittest.TestCase):
         self.assertEqual("abc", constructedHttpRequest.headers["CustomOperationId"], "Custom header has incorrect value.")
 
         self.assertEqual( constructedHttpRequest.data, '{"content": "This is a test body."}')
+
+    def test_httpToAmqp(self):
+        resp = requests.Response()
+        resp._content = b"hello"
+        resp.status_code = 201
+        resp.headers["BrokerProperties"] = json.dumps({"MessageId": "1", "CorrelationId": "abc", "DeliveryCount": 2})
+        resp.headers["CustomKey"] = "Value"
+
+        message = amqp_translator.HttpToAmqp(resp)
+
+        self.assertEqual(message.body, "hello")
+        self.assertEqual(message.id, "1")
+        broker_props = json.loads(resp.headers["BrokerProperties"])
+        self.assertEqual(message.correlation_id, broker_props.get("CorrelationId", 0))
+        self.assertEqual(message.delivery_count, 2)
+        self.assertIn("CustomKey", message.properties)
+        self.assertEqual(message.properties["CustomKey"], "Value")
 
 if __name__ == '__main__':
     unittest.main()
