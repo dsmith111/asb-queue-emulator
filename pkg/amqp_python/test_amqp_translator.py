@@ -93,7 +93,8 @@ class TestAmqpTranslation(unittest.TestCase):
 
         self.assertEqual(message.body, "hello")
         self.assertEqual(message.id, "1")
-        self.assertEqual(message.correlation_id, resp.headers.get("CorrelationId", 0))
+        broker_props = json.loads(resp.headers["BrokerProperties"])
+        self.assertEqual(message.correlation_id, broker_props.get("CorrelationId", 0))
         self.assertEqual(message.delivery_count, 2)
         self.assertIn("CustomKey", message.properties)
         self.assertEqual(message.properties["CustomKey"], "Value")
