@@ -115,7 +115,7 @@ def HttpToAmqp(httpResponse: http.client.HTTPResponse) -> Message:
         except Exception:
             props = {}
 
-        response.id = props.get("MessageID") or props.get("MessageId")
+        response.id = props.get("MessageID") if "MessageID" in props else props.get("MessageId")
         response.reply_to = props.get("ReplyTo")
         response.ttl = props.get("TTL") or props.get("TimeToLive", 0)
         response.delivery_count = props.get("DeliveryCount", 0)
